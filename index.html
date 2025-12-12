@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>surya gadget zone</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!--
+  Surya Gadget Zone - LEVEL 4 ULTRA
+  Single-file HTML (paste into CodePen: HTML panel)
+  Features:
+   - Product filters (category, price, search)
+   - Sorting
+   - Cart page (modal) with quantity, remove
+   - Wishlist and Compare features
+   - Admin panel to add products (localStorage)
+   - Profile editing (localStorage)
+   - Mock Payment UI (fake validation)
+   - Persistence via localStorage
+   - Instructions for optional Firebase integration (placeholder)
+
+  Author: Jarvis for Tharun (Tharunram)
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Surya Gadget Zone - Level 4 Ultra</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --accent:#ff9900; --bg-dark:#0f1114; --card:#151617; --muted:#9aa0a6; --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{font-family:'Poppins',sans-serif;margin:0;background:var(--bg-dark);color:#e8eef1}
+    .container{max-width:1200px;margin:20px auto;padding:16px}
+
+    /* header */
+    header.site{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{font-weight:900;font-size:22px;color:var(--accent)}
+    .brand span{color:#fff;font-weight:700}
+    .searchbar{flex:1;margin:0 16px;display:flex;gap:8px}
+    .searchbar input{flex:1;padding:10px;border-radius:10px;border:none;background:var(--glass);color:inherit;padding-left:14px}
+    .icon-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;cursor:pointer;color:inherit}
+    .badge{background:var(--accent);color:#000;padding:4px 8px;border-radius:999px;font-weight:700;margin-left:8px}
+
+    /* layout */
+    .top-row{display:flex;gap:20px}
+    .left{width:260px}
+    .main{flex:1}
+
+    /* filters */
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .panel h4{margin-bottom:10px}
+    .categories button{display:block;width:100%;text-align:left;padding:8px;border-radius:8px;border:none;background:transparent;color:inherit;cursor:pointer}
+    .range-row{display:flex;gap:8px}
+    .range-row input{width:100%;padding:8px;border-radius:8px;border:none;background:var(--glass)}
+
+    /* product grid */
+    .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:16px}
+    .card{background:var(--card);padding:12px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+    .card img{width:100%;height:160px;object-fit:cover;border-radius:8px}
+    .card .title{font-weight:700;margin:8px 0}
+    .price{font-weight:800;color:var(--accent)}
+    .card .actions{display:flex;gap:8px;margin-top:10px}
+    .btn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#000;font-weight:700}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+
+    /* footer small */
+    footer{margin-top:24px;text-align:center;color:var(--muted);font-size:14px}
+
+    /* modals/popups */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999}
+    .modal.show{display:flex}
+    .modal .sheet{width:90%;max-width:900px;background:#0d1113;padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+
+    /* cart table */
+    .cart-list{width:100%;border-collapse:collapse}
+    .cart-list th, .cart-list td{padding:10px;text-align:left}
+    .qty{display:flex;gap:8px;align-items:center}
+    .qty button{padding:6px 8px;border-radius:8px;border:none;background:rgba(255,255,255,0.04);cursor:pointer}
+
+    /* small widgets */
+    .row{display:flex;gap:12px;align-items:center}
+    .chip{padding:8px 12px;border-radius:999px;background:var(--glass)}
+
+    /* compare grid */
+    .compare-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+
+    /* admin form */
+    .form-row{display:flex;gap:8px}
+    .form-row input{flex:1;padding:8px;border-radius:8px;border:none;background:var(--glass)}
+
+    /* responsive */
+    @media (max-width:840px){.top-row{flex-direction:column}.left{width:100%}.searchbar{margin:12px 0}}
+  </style>
+<style>
+/* --- Level 7 Ultra Animations --- */
+.hero-title { animation: floatY 4s ease-in-out infinite; }
+.hero-sub { animation: fadeSlide 2.4s ease forwards; }
+.product-card { transition: transform .35s ease, box-shadow .35s ease; }
+.product-card:hover { transform: translateY(-10px) scale(1.05) rotateX(6deg); box-shadow: 0 20px 40px rgba(0,0,0,0.25); }
+@keyframes floatY {0%{transform: translateY(0);}50%{transform: translateY(-15px);}100%{transform: translateY(0);} }
+@keyframes fadeSlide {from{opacity:0; transform: translateY(25px);}to{opacity:1; transform: translateY(0);} }
+.section { animation: fadeUpSection .9s ease forwards; opacity:0; }
+@keyframes fadeUpSection {from{opacity:0; transform:translateY(40px);}to{opacity:1; transform:translateY(0);} }
+.quick-view-content { animation: scaleIn .35s ease forwards; }
+@keyframes scaleIn {from{transform:scale(.7); opacity:0;}to{transform:scale(1); opacity:1;} }
+.btn-primary { position:relative; overflow:hidden; }
+.btn-primary::after {content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background:rgba(255,255,255,0.35); transition: .45s;} 
+.btn-primary:hover::after { left:0; }
+</style>
+<style>
+/* === Level 8: Neon Cyber Theme === */
+:root{ --neon1: #00f6ff; --neon2:#9b59ff; --neon3:#ff2d95; --glass-2: rgba(255,255,255,0.03); }
+body{background: radial-gradient(1200px 600px at 10% 10%, rgba(155,89,255,0.06), transparent), radial-gradient(900px 500px at 90% 90%, rgba(0,246,255,0.04), transparent), linear-gradient(180deg,#071020 0%, #0e0f12 100%);}
+.brand{color:var(--neon2); text-shadow: 0 0 8px rgba(155,89,255,0.35), 0 0 20px rgba(0,246,255,0.06);}
+.header, .panel, .card, .sheet{border:1px solid rgba(255,255,255,0.04); backdrop-filter: blur(6px);}
+.card{border-radius:14px}
+.price{color:var(--neon1); text-shadow:0 0 6px rgba(0,246,255,0.12);}
+.btn.primary{background: linear-gradient(90deg,var(--neon1),var(--neon2)); color:#021018; box-shadow: 0 6px 20px rgba(155,89,255,0.08), inset 0 -2px 8px rgba(0,0,0,0.15);}
+.btn.ghost{border:1px solid rgba(255,255,255,0.06); background:transparent}
+.panel h4{color:var(--neon2)}
+/* subtle neon outlines */
+.card::after{content:"";position:absolute;inset:0;border-radius:14px;padding:1px;pointer-events:none;mix-blend-mode:overlay;}
+
+/* neon floating blobs */
+.neon-blob{position:fixed;pointer-events:none;filter:blur(40px);opacity:0.18;z-index:0}
+
+/* make container content above blobs */
+.container{position:relative;z-index:2}
+
+/* small utility to highlight on hover */
+.card:hover{box-shadow:0 30px 60px rgba(155,89,255,0.06), 0 8px 30px rgba(0,246,255,0.04)}
+
+/* toggle for neon mode */
+#neonToggle{position:fixed;right:18px;bottom:18px;padding:10px;border-radius:999px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);z-index:9999;cursor:pointer}
+</style>
+
+<!-- Neon blobs (visual only) -->
+<div class="neon-blob" id="blob1" style="width:420px;height:420px;background:radial-gradient(circle,#9b59ff,#6f2ce8);left:-120px;top:-80px;"></div>
+<div class="neon-blob" id="blob2" style="width:360px;height:360px;background:radial-gradient(circle,#00f6ff,#00bcd4);right:-100px;bottom:-80px;"></div>
+
+<!-- Particle canvas -->
+<canvas id="neonCanvas" style="position:fixed;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;" aria-hidden="true"></canvas>
+
+<button id="neonToggle" title="Toggle Neon Theme">Neon</button>
+
+<script>
+// Neon particles on canvas
+(function(){
+  const canvas = document.getElementById('neonCanvas');
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = innerWidth; let h = canvas.height = innerHeight;
+  window.addEventListener('resize', ()=>{ w=canvas.width=innerWidth; h=canvas.height=innerHeight; });
+
+  const colors = ['rgba(0,246,255,0.12)','rgba(155,89,255,0.10)','rgba(255,45,149,0.08)'];
+  const particles = Array.from({length:80}).map(()=>({ x:Math.random()*w, y:Math.random()*h, r:Math.random()*2.5+0.6, vx:(Math.random()-0.5)*0.4, vy:(Math.random()-0.5)*0.4, c:colors[Math.floor(Math.random()*colors.length)] }));
+
+  function tick(){ ctx.clearRect(0,0,w,h); particles.forEach(p=>{
+    p.x += p.vx; p.y += p.vy;
+    if(p.x<0||p.x>w) p.vx *= -1; if(p.y<0||p.y>h) p.vy *= -1;
+    ctx.beginPath(); ctx.fillStyle = p.c; ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+  requestAnimationFrame(tick); }
+  tick();
+
+  // neon toggle
+  const toggle = document.getElementById('neonToggle');
+  let enabled = true;
+  toggle.onclick = ()=>{ enabled = !enabled; canvas.style.display = enabled ? 'block' : 'none'; document.getElementById('blob1').style.display = enabled ? 'block' : 'none'; document.getElementById('blob2').style.display = enabled ? 'block' : 'none'; toggle.textContent = enabled ? 'Neon' : 'Neon Off'; };
+})();
+</script>
+
+<style>
+/* === Level 9: 3D Parallax + Interactive Hero Reveal === */
+.parallax-layer {position:absolute; inset:0; pointer-events:none;}
+.parallax-1 {background:url('https://i.imgur.com/Ww7QG3v.png') center/cover no-repeat; opacity:0.08;}
+.parallax-2 {background:url('https://i.imgur.com/5wPPRHG.png') center/cover no-repeat; opacity:0.05;}
+.hero-reveal {position:absolute; inset:0; background:linear-gradient(135deg,#00f6ff30,#9b59ff20,#ff2d9520); mix-blend-mode:screen; opacity:0; transition:opacity .5s ease; pointer-events:none;}
+.hero:hover .hero-reveal {opacity:1;}
+.hero-title {transition: transform .5s ease;} 
+.hero:hover .hero-title {transform: scale(1.05);} 
+</style>
+
+<div class="parallax-layer parallax-1" id="px1"></div>
+<div class="parallax-layer parallax-2" id="px2"></div>
+<div class="hero-reveal" id="revealFx"></div>
+
+<script>
+// Level 9 Parallax
+const p1 = document.getElementById('px1');
+const p2 = document.getElementById('px2');
+window.addEventListener('mousemove',(e)=>{
+  const x = (e.clientX / window.innerWidth - 0.5);
+  const y = (e.clientY / window.innerHeight - 0.5);
+  p1.style.transform = `translate(${x*20}px, ${y*20}px)`;
+  p2.style.transform = `translate(${x*40}px, ${y*40}px)`;
+});
+
+// Interactive Hero Glow
+const reveal = document.getElementById('revealFx');
+window.addEventListener('scroll',()=>{
+  const top = window.scrollY;
+  reveal.style.opacity = Math.min(1, top/300);
+});
+</script>
+<style>
+/* === Level 14: Neon Particle Aura for Product Cards === */
+.product-card {
+  position: relative;
+  overflow: visible;
+}
+.particle-aura {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+  z-index: -1;
+}
+.particle-aura canvas {
+  width: 100%;
+  height: 100%;
+}
+</style>
+<script>
+// === Neon Particle Aura System ===
+function addParticleAura(card){
+  const wrap = document.createElement('div');
+  wrap.className = 'particle-aura';
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+  card.appendChild(wrap);
+
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const count = 20;
+
+  function resize(){
+    canvas.width = card.offsetWidth + 40;
+    canvas.height = card.offsetHeight + 40;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      r: Math.random()*3+1,
+      dx: (Math.random()-.5)*0.4,
+      dy: (Math.random()-.5)*0.4
+    });
+  }
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(0,255,255,${0.3 + Math.random()*0.4})`;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#00ffff';
+      ctx.fill();
+      p.x+=p.dx; p.y+=p.dy;
+      if(p.x<0||p.x>canvas.width) p.dx*=-1;
+      if(p.y<0||p.y>canvas.height) p.dy*=-1;
+    });
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.product-card').forEach(card=>{
+    addParticleAura(card);
+  });
+});
+</script>
+</head>
+<body>
+
+  <div class="container">
+    <header class="site">
+      <div class="brand">SURYA <span>GADGET</span> ZONE</div>
+      <div class="searchbar">
+        <input id="globalSearch" placeholder="Search watches, brands, features..." />
+        <button id="filterBtn" class="icon-btn">Filters</button>
+        <button id="cartBtn" class="icon-btn">Cart <span id="cartBadge" class="badge">0</span></button>
+        <button id="wishBtn" class="icon-btn">Wishlist <span id="wishBadge" class="badge">0</span></button>
+        <button id="compareBtn" class="icon-btn">Compare</button>
+        <button id="profileBtn" class="icon-btn">Profile</button>
+      </div>
+    </header>
+
+    <div class="top-row">
+      <aside class="left">
+        <div class="panel">
+          <h4>Filters</h4>
+          <div>
+            <label>Categories</label>
+            <div class="categories" id="categoryList"></div>
+          </div>
+          <div style="margin-top:10px">
+            <label>Price Range</label>
+            <div class="range-row">
+              <input id="minPrice" placeholder="Min" type="number" />
+              <input id="maxPrice" placeholder="Max" type="number" />
+            </div>
+            <button id="applyFilter" class="btn" style="margin-top:10px">Apply</button>
+            <button id="clearFilter" class="btn ghost" style="margin-top:10px">Clear</button>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Sort By</label>
+            <select id="sortBy" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:none;background:var(--glass)">
+              <option value="newest">Newest</option>
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
+              <option value="name">Name A → Z</option>
+            </select>
+          </div>
+
+          <div style="margin-top:12px">
+            <h4>Admin</h4>
+            <div class="form-row">
+              <input id="admName" placeholder="Product name" />
+              <input id="admPrice" placeholder="Price" type="number" />
+            </div>
+            <input id="admImg" placeholder="Image URL" style="margin-top:8px" />
+            <button id="admAdd" class="btn primary" style="margin-top:8px">Add Product</button>
+          </div>
+
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="chip" id="resultsCount">Showing 0 products</div>
+          <div class="row">
+            <div style="color:var(--muted);margin-right:8px">Sort / Filter</div>
+            <button id="clearAllBtn" class="btn ghost">Reset All</button>
+          </div>
+        </div>
+
+        <div id="productGrid" class="products"></div>
+
+        <footer>Built with ❤️ by Jarvis for Tharun (Tharunram) — Level 4 Ultra</footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="cartModal" class="modal"><div class="sheet"><h3>Your Cart</h3><div id="cartContent"></div><div style="margin-top:12px;text-align:right"><button id="checkoutBtn" class="btn primary">Checkout</button><button id="closeCart" class="btn ghost">Close</button></div></div></div>
+
+  <div id="wishModal" class="modal"><div class="sheet"><h3>Wishlist</h3><div id="wishContent"></div><div style="margin-top:12px;text-align:right"><button id="closeWish" class="btn ghost">Close</button></div></div></div>
+
+  <div id="compareModal" class="modal"><div class="sheet"><h3>Compare</h3><div id="compareContent"></div><div style="margin-top:12px;text-align:right"><button id="closeCompare" class="btn ghost">Close</button></div></div></div>
+
+  <div id="profileModal" class="modal"><div class="sheet"><h3>Profile</h3><div id="profileContent"></div><div style="margin-top:12px;text-align:right"><button id="closeProfile" class="btn ghost">Close</button></div></div></div>
+
+  <div id="paymentModal" class="modal"><div class="sheet"><h3>Mock Payment</h3>
+    <div style="display:flex;gap:12px;flex-direction:column">
+      <input id="cardName" placeholder="Cardholder name" />
+      <input id="cardNumber" placeholder="Card number (16 digits)" />
+      <div style="display:flex;gap:8px"><input id="cardExp" placeholder="MM/YY" /><input id="cardCvv" placeholder="CVV" /></div>
+      <button id="payNow" class="btn primary">Pay Now (Mock)</button>
+      <div id="paymentMsg" style="color:var(--muted)"></div>
+    </div>
+    <div style="margin-top:12px;text-align:right"><button id="closePayment" class="btn ghost">Close</button></div>
+  </div></div>
+
+  <!-- TEMPLATE SCRIPTS -->
+  <script>
+    // ---------- Data & Persistence ----------
+    const STORAGE_KEYS = { PRODUCTS: 'sgz_products_v4', CART: 'sgz_cart_v4', WISH: 'sgz_wish_v4', PROFILE: 'sgz_profile_v4' };
+
+    // default product list
+    const defaultProducts = [
+      {id:1,name:'Titan Classic Men',price:4499,cat:'Premium',img:'https://m.media-amazon.com/images/I/71-7zYnO9bL._UL1500_.jpg',desc:'Classic metal strap watch'},
+      {id:2,name:'Fastrack Sports',price:2299,cat:'Sports',img:'https://m.media-amazon.com/images/I/71jDdQO47oL._UL1500_.jpg',desc:'Waterproof sports watch'},
+      {id:3,name:'Sonata Slim',price:1699,cat:'Digital',img:'https://m.media-amazon.com/images/I/71vFKBpKakL._UL1500_.jpg',desc:'Slim casual watch'},
+      {id:4,name:'SmartX Pro',price:7999,cat:'Smart',img:'https://m.media-amazon.com/images/I/61xZ6M1JgPL._UL1500_.jpg',desc:'Smart watch with fitness features'},
+      {id:5,name:'Aero Chrono',price:12999,cat:'Premium',img:'https://m.media-amazon.com/images/I/81WimZLWH1L._UL1500_.jpg',desc:'Chronograph series'}
+    ];
+
+    // load products from storage or defaults
+    function loadProductsFromStorage(){
+      const raw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+      if(!raw){ localStorage.setItem(STORAGE_KEYS.PRODUCTS,JSON.stringify(defaultProducts)); return defaultProducts; }
+      try{ return JSON.parse(raw);}catch(e){ localStorage.setItem(STORAGE_KEYS.PRODUCTS,JSON.stringify(defaultProducts)); return defaultProducts; }
+    }
+
+    let products = loadProductsFromStorage();
+    let cart = JSON.parse(localStorage.getItem(STORAGE_KEYS.CART)||'[]');
+    let wish = JSON.parse(localStorage.getItem(STORAGE_KEYS.WISH)||'[]');
+    let profile = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROFILE)||'{}');
+
+    // helpers
+    const byId = id => products.find(p=>p.id===id);
+    const saveProducts = ()=> localStorage.setItem(STORAGE_KEYS.PRODUCTS,JSON.stringify(products));
+    const saveCart = ()=> localStorage.setItem(STORAGE_KEYS.CART,JSON.stringify(cart));
+    const saveWish = ()=> localStorage.setItem(STORAGE_KEYS.WISH,JSON.stringify(wish));
+    const saveProfile = ()=> localStorage.setItem(STORAGE_KEYS.PROFILE,JSON.stringify(profile));
+
+    // ---------- UI refs ----------
+    const productGrid = document.getElementById('productGrid');
+    const resultsCount = document.getElementById('resultsCount');
+    const cartBadge = document.getElementById('cartBadge');
+    const wishBadge = document.getElementById('wishBadge');
+
+    // ---------- Renderers ----------
+    function renderCategories(){
+      const cats = Array.from(new Set(products.map(p=>p.cat)));
+      const container = document.getElementById('categoryList'); container.innerHTML='';
+      const allBtn = document.createElement('button'); allBtn.textContent='All'; allBtn.onclick=()=> {document.querySelectorAll('#categoryList button').forEach(b=>b.style.fontWeight=''); allBtn.style.fontWeight='700'; renderProducts();}; container.appendChild(allBtn);
+      cats.forEach(c=>{
+        const b=document.createElement('button'); b.textContent=c; b.onclick=()=>{ document.querySelectorAll('#categoryList button').forEach(x=>x.style.fontWeight=''); b.style.fontWeight='700'; renderProducts({cat:c}); };
+        container.appendChild(b);
+      });
+    }
+
+    function renderProducts(opts={}){
+      let list = [...products];
+      // apply search
+      const q=document.getElementById('globalSearch').value.trim().toLowerCase();
+      if(q) list = list.filter(p=> (p.name+ ' '+p.desc+' '+p.cat).toLowerCase().includes(q));
+      // category filter via opts
+      if(opts.cat) list = list.filter(p=>p.cat===opts.cat);
+      // price range
+      const min = parseFloat(document.getElementById('minPrice').value||0);
+      const maxRaw = document.getElementById('maxPrice').value; const max = maxRaw?parseFloat(maxRaw):null;
+      if(min) list = list.filter(p=>p.price>=min);
+      if(max) list = list.filter(p=>p.price<=max);
+      // sort
+      const sort = document.getElementById('sortBy').value;
+      if(sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+      if(sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+      if(sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name));
+      if(sort==='newest') list.sort((a,b)=>b.id-a.id);
+
+      productGrid.innerHTML='';
+      list.forEach(p=>{
+        const c=document.createElement('div'); c.className='card';
+        c.innerHTML=`
+          <img src="${p.img}" alt="${p.name}" />
+          <div class="title">${p.name}</div>
+          <div class="desc" style="color:var(--muted);font-size:13px">${p.desc}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><div class="price">₹${p.price}</div><div style="color:var(--muted);font-size:12px">${p.cat}</div></div>
+          <div class="actions">
+            <button class="btn primary" data-id="${p.id}" onclick="addToCart(${p.id})">Add to Cart</button>
+            <button class="btn ghost" onclick="toggleWish(${p.id})">❤</button>
+            <button class="btn ghost" onclick="toggleCompare(${p.id})">↔</button>
+          </div>
+        `;
+        productGrid.appendChild(c);
+      });
+
+      resultsCount.textContent = `Showing ${list.length} products`;
+    }
+
+    // ---------- Cart / Wishlist / Compare ----------
+    function updateBadges(){ cartBadge.textContent = cart.reduce((s,i)=>s+i.qty,0); wishBadge.textContent = wish.length; }
+
+    function addToCart(id){ const item = cart.find(x=>x.id===id); if(item){ item.qty++; } else { cart.push({id,qty:1}); } saveCart(); updateBadges(); alert('Added to cart'); }
+
+    function renderCartModal(){ const box = document.getElementById('cartContent'); if(cart.length===0){ box.innerHTML='<div style="padding:20px;color:var(--muted)">Cart is empty</div>'; return; }
+      let html = '<table class="cart-list"><thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody>';
+      let grand=0;
+      cart.forEach(it=>{ const p = byId(it.id); const total = p.price * it.qty; grand += total; html += `<tr><td>${p.name}</td><td>₹${p.price}</td><td><div class="qty"><button onclick="changeQty(${it.id},-1)">-</button><div>${it.qty}</div><button onclick="changeQty(${it.id},1)">+</button></div></td><td>₹${total}</td><td><button onclick="removeFromCart(${it.id})">Remove</button></td></tr>`});
+      html += `</tbody></table><div style="margin-top:12px;text-align:right"><strong>Total: ₹${grand}</strong></div>`;
+      box.innerHTML = html;
+    }
+
+    function changeQty(id,delta){ const it = cart.find(x=>x.id===id); if(!it) return; it.qty += delta; if(it.qty<=0) cart = cart.filter(x=>x.id!==id); saveCart(); renderCartModal(); updateBadges(); }
+    function removeFromCart(id){ cart = cart.filter(x=>x.id!==id); saveCart(); renderCartModal(); updateBadges(); }
+
+    // wishlist
+    function toggleWish(id){ const idx = wish.indexOf(id); if(idx>-1) wish.splice(idx,1); else wish.push(id); saveWish(); updateBadges(); alert('Wishlist updated'); }
+    function renderWishModal(){ const box = document.getElementById('wishContent'); if(wish.length===0){ box.innerHTML='<div style="padding:20px;color:var(--muted)">No items in wishlist</div>'; return; } let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">'; wish.forEach(id=>{ const p=byId(id); html += `<div class="card"><img src="${p.img}"/><div class="title">${p.name}</div><div class="price">₹${p.price}</div><div style="margin-top:8px"><button class="btn primary" onclick="addToCart(${id})">Add to Cart</button></div></div>` }); html += '</div>'; box.innerHTML = html; }
+
+    // compare (max 2)
+    let compare = [];
+    function toggleCompare(id){ const idx = compare.indexOf(id); if(idx>-1) compare.splice(idx,1); else { if(compare.length>=2){ alert('Compare supports up to 2 items'); return; } compare.push(id);} renderCompareModal(); }
+    function renderCompareModal(){ const box = document.getElementById('compareContent'); if(compare.length===0){ box.innerHTML = '<div style="padding:20px;color:var(--muted)">No items to compare</div>'; return; } let html = '<div class="compare-grid">'; compare.forEach(id=>{ const p=byId(id); html += `<div class="panel"><img src="${p.img}" style="width:100%;height:180px;object-fit:cover;border-radius:8px"/><div style="margin-top:8px"><strong>${p.name}</strong><div style="color:var(--muted)">${p.desc}</div><div class="price">₹${p.price}</div></div></div>` }); html += '</div>'; box.innerHTML = html; }
+
+    // ---------- Profile ----------
+    function renderProfile(){ const box = document.getElementById('profileContent'); if(!profile.name){ profile = {name:'Tharun',email:'tharun@example.com'}; saveProfile(); }
+      box.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input id="profName" placeholder="Name" value="${profile.name||''}" />
+          <input id="profEmail" placeholder="Email" value="${profile.email||''}" />
+          <button id="saveProfile" class="btn primary">Save</button>
+        </div>
+      `;
+      document.getElementById('saveProfile').onclick = ()=>{ profile.name = document.getElementById('profName').value; profile.email = document.getElementById('profEmail').value; saveProfile(); alert('Profile saved'); }
+    }
+
+    // ---------- Admin Add Product ----------
+    document.getElementById('admAdd').onclick = ()=>{
+      const name = document.getElementById('admName').value.trim();
+      const price = parseFloat(document.getElementById('admPrice').value);
+      const img = document.getElementById('admImg').value.trim() || 'https://via.placeholder.com/400x300?text=Image';
+      if(!name || !price) return alert('Provide name and price');
+      const id = Math.max(0,...products.map(p=>p.id)) + 1;
+      products.unshift({id,name,price,cat:'Custom',img,desc:'Added via admin panel'});
+      saveProducts(); renderCategories(); renderProducts(); alert('Product added');
+    }
+
+    // ---------- Filters / search ----------
+    document.getElementById('applyFilter').onclick = ()=>{ renderProducts(); }
+    document.getElementById('clearFilter').onclick = ()=>{ document.getElementById('minPrice').value=''; document.getElementById('maxPrice').value=''; renderProducts(); }
+    document.getElementById('sortBy').onchange = ()=>renderProducts();
+    document.getElementById('globalSearch').addEventListener('input',()=>renderProducts());
+    document.getElementById('clearAllBtn').onclick = ()=>{ localStorage.clear(); location.reload(); }
+
+    // ---------- Modal Wiring ----------
+    // cart modal
+    document.getElementById('cartBtn').onclick = ()=>{ renderCartModal(); document.getElementById('cartModal').classList.add('show'); }
+    document.getElementById('closeCart').onclick = ()=> document.getElementById('cartModal').classList.remove('show');
+    // wishlist
+    document.getElementById('wishBtn').onclick = ()=>{ renderWishModal(); document.getElementById('wishModal').classList.add('show'); }
+    document.getElementById('closeWish').onclick = ()=> document.getElementById('wishModal').classList.remove('show');
+    // compare
+    document.getElementById('compareBtn').onclick = ()=>{ renderCompareModal(); document.getElementById('compareModal').classList.add('show'); }
+    document.getElementById('closeCompare').onclick = ()=> document.getElementById('compareModal').classList.remove('show');
+    // profile
+    document.getElementById('profileBtn').onclick = ()=>{ renderProfile(); document.getElementById('profileModal').classList.add('show'); }
+    document.getElementById('closeProfile').onclick = ()=> document.getElementById('profileModal').classList.remove('show');
+
+    // checkout -> payment
+    document.getElementById('checkoutBtn').onclick = ()=>{
+      document.getElementById('cartModal').classList.remove('show');
+      document.getElementById('paymentModal').classList.add('show');
+      document.getElementById('paymentMsg').textContent='Total: ₹'+cart.reduce((s,i)=>s+byId(i.id).price*i.qty,0);
+    }
+    document.getElementById('closePayment').onclick = ()=> document.getElementById('paymentModal').classList.remove('show');
+
+    document.getElementById('payNow').onclick = ()=>{
+      const num = document.getElementById('cardNumber').value.replace(/\s/g,'');
+      const name = document.getElementById('cardName').value.trim();
+      const cvv = document.getElementById('cardCvv').value.trim();
+      if(!name || num.length!==16 || cvv.length<3){ document.getElementById('paymentMsg').textContent='Invalid card details (mock validation)'; return; }
+      // mock success
+      document.getElementById('paymentMsg').textContent='Payment successful! Order placed.';
+      // clear cart
+      cart = []; saveCart(); updateBadges(); setTimeout(()=>{ document.getElementById('paymentModal').classList.remove('show'); alert('Order confirmed — mock'); },900);
+    }
+
+    // ---------- Init ----------
+    renderCategories(); renderProducts(); updateBadges();
+
+    // expose helper fns for inline onclick
+    window.addToCart = addToCart; window.toggleWish = toggleWish; window.toggleCompare = toggleCompare; window.changeQty = changeQty; window.removeFromCart = removeFromCart;
+
+    // optional: provide simple Firebase placeholder instructions in console
+    console.log('To integrate Firebase: create a project, enable Firestore/Authentication, then add client config and replace localStorage code with Firestore reads/writes. Keep API keys in client config (public), use server for secure operations.');
+  </script>
+
+
+<!-- LEVEL 5 UPGRADE: ADVANCED FILTER SYSTEM + ANIMATED PRODUCT SORTING -->
+<script>
+// === ADVANCED FILTERING & SORTING ===
+// Add filter UI dynamically
+const filterBar = document.createElement('div');
+filterBar.className = 'filter-bar';
+filterBar.innerHTML = `
+  <select id="filterType">
+    <option value="all">All Types</option>
+    <option value="premium">Premium</option>
+    <option value="sport">Sport</option>
+    <option value="classic">Classic</option>
+    <option value="smart">Smart Watch</option>
+  </select>
+  <select id="sortPrice">
+    <option value="none">Sort by Price</option>
+    <option value="low">Low → High</option>
+    <option value="high">High → Low</option>
+  </select>
+`;
+
+document.querySelector('.products-section').prepend(filterBar);
+
+// Update product objects with types
+products = products.map(p => ({ ...p, type: p.type || 'classic' }));
+
+function applyFilters() {
+  let type = document.getElementById('filterType').value;
+  let sort = document.getElementById('sortPrice').value;
+
+  let filtered = [...products];
+
+  if (type !== 'all') filtered = filtered.filter(p => p.type === type);
+
+  if (sort === 'low') filtered.sort((a,b) => a.price - b.price);
+  if (sort === 'high') filtered.sort((a,b) => b.price - a.price);
+
+  animateProducts(filtered);
+}
+
+document.getElementById('filterType').onchange = applyFilters;
+document.getElementById('sortPrice').onchange = applyFilters;
+
+// Smooth animation while filtering
+function animateProducts(list) {
+  let container = document.getElementById('productList');
+  container.style.opacity = 0;
+  setTimeout(() => {
+    container.innerHTML = "";
+    list.forEach(p => {
+      container.innerHTML += `
+        <div class="card fadeIn">
+          <img src="${p.img}">
+          <h3>${p.name}</h3>
+          <p>₹${p.price}</p>
+          <button onclick="addToCart()">Add</button>
+          <button onclick="openReview()">Review</button>
+        </div>`;
+    });
+    container.style.opacity = 1;
+  }, 200);
+}
+</script>
+
+<style>
+/* FILTER UI */
+.filter-bar {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.filter-bar select {
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: #ff9900;
+  color: black;
+  font-weight: 600;
+  border: none;
+}
+
+/* ANIMATION */
+.fadeIn {
+  animation: fade 0.5s ease;
+}
+@keyframes fade {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+</style>
+
+
+<!-- LEVEL 6 UPGRADE: AUTH (signup/login), CART PAGE, ORDER HISTORY, QUICK-VIEW + ZOOM, AND ORDER PERSISTENCE -->
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal">
+  <div class="sheet">
+    <h3>Sign in / Sign up</h3>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="authEmail" placeholder="Email" />
+      <input id="authPass" placeholder="Password" type="password" />
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="signUpBtn" class="btn primary">Sign Up</button>
+      <button id="signInBtn" class="btn ghost">Sign In</button>
+      <button id="closeAuth" class="btn ghost">Close</button>
+    </div>
+    <div id="authMsg" style="color:var(--muted);margin-top:8px"></div>
+    <div style="margin-top:12px;color:var(--muted);font-size:12px">Note: This is client-side mock auth saved into localStorage. For real auth use Firebase Auth (instructions below).</div>
+  </div>
+</div>
+
+<!-- QUICK VIEW MODAL (Product details + Zoom) -->
+<div id="quickView" class="modal"><div class="sheet" style="max-width:700px;display:flex;gap:12px">
+  <div style="flex:1"><img id="qImg" src="" style="width:100%;height:350px;object-fit:contain;cursor:zoom-in" /></div>
+  <div style="flex:1">
+    <h3 id="qName"></h3>
+    <div id="qDesc" style="color:var(--muted)"></div>
+    <div style="margin-top:12px"><strong id="qPrice" class="price"></strong></div>
+    <div style="margin-top:12px;display:flex;gap:8px"><button id="qAdd" class="btn primary">Add to Cart</button><button id="qWish" class="btn ghost">Wishlist</button></div>
+    <div style="margin-top:16px;color:var(--muted);font-size:13px">Quick view - click on the image to zoom.</div>
+    <div style="margin-top:24px;text-align:right"><button id="closeQuick" class="btn ghost">Close</button></div>
+  </div>
+</div></div>
+
+<!-- ORDER HISTORY MODAL -->
+<div id="ordersModal" class="modal"><div class="sheet"><h3>Order History</h3><div id="ordersList"></div><div style="margin-top:12px;text-align:right"><button id="closeOrders" class="btn ghost">Close</button></div></div></div>
+
+<style>
+/* Quick view image zoom simple effect */
+#qImg.zoomed{transform:scale(1.8); transition:transform 0.25s ease;}
+</style>
+
+<script>
+// ===== Level 6 JS Enhancements =====
+// AUTH (mock client auth saved to localStorage)
+const AUTH_KEY = 'sgz_auth_v6';
+function saveAuth(user){ localStorage.setItem(AUTH_KEY, JSON.stringify(user)); }
+function loadAuth(){ try{ return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ return null; } }
+let currentUser = loadAuth();
+
+function openAuth(){ document.getElementById('authModal').classList.add('show'); }
+function closeAuth(){ document.getElementById('authModal').classList.remove('show'); }
+
+document.getElementById('signUpBtn').onclick = ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value.trim();
+  if(!email || !pass){ document.getElementById('authMsg').textContent='Provide email and password'; return; }
+  // naive storage of user (mock) - DO NOT use in production
+  const users = JSON.parse(localStorage.getItem('sgz_users_v6')||'[]');
+  if(users.find(u=>u.email===email)){ document.getElementById('authMsg').textContent='User already exists'; return; }
+  users.push({email,pass}); localStorage.setItem('sgz_users_v6', JSON.stringify(users));
+  saveAuth({email}); currentUser = {email}; updateProfileUI(); document.getElementById('authMsg').textContent='Signed up successfully'; setTimeout(closeAuth,800);
+};
+
+document.getElementById('signInBtn').onclick = ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value.trim();
+  const users = JSON.parse(localStorage.getItem('sgz_users_v6')||'[]');
+  const u = users.find(x=>x.email===email && x.pass===pass);
+  if(!u){ document.getElementById('authMsg').textContent='Invalid credentials'; return; }
+  saveAuth({email}); currentUser = {email}; updateProfileUI(); document.getElementById('authMsg').textContent='Signed in'; setTimeout(closeAuth,600);
+};
+
+document.getElementById('closeAuth').onclick = closeAuth;
+
+// Hook auth open from profile button
+const profileBtn = document.getElementById('profileBtn');
+profileBtn.onclick = ()=>{
+  if(currentUser){ renderProfile(); document.getElementById('profileModal').classList.add('show'); }
+  else openAuth();
+};
+
+function updateProfileUI(){ const badge = document.querySelector('.brand'); if(currentUser) badge.title='Signed in as '+currentUser.email; }
+updateProfileUI();
+
+// QUICK VIEW wiring
+function openQuickView(productId){ const p = byId(productId); if(!p) return; document.getElementById('qImg').src = p.img; document.getElementById('qName').textContent = p.name; document.getElementById('qDesc').textContent = p.desc; document.getElementById('qPrice').textContent = '₹'+p.price; document.getElementById('qAdd').onclick = ()=>{ addToCart(p.id); }; document.getElementById('qWish').onclick = ()=>{ toggleWish(p.id); }; document.getElementById('quickView').classList.add('show'); }
+
+document.getElementById('closeQuick').onclick = ()=> document.getElementById('quickView').classList.remove('show');
+// image zoom toggle
+const qImg = document.getElementById('qImg'); qImg.onclick = ()=> qImg.classList.toggle('zoomed');
+
+// Replace product card buttons to use quick view
+function enhanceProductCards(){ document.querySelectorAll('.card').forEach(card=>{
+  // find title and attach quick view
+  const title = card.querySelector('.title'); if(title){ title.style.cursor='pointer'; title.onclick = ()=>{
+    // find product by name
+    const name = title.textContent.trim(); const p = products.find(x=>x.name===name); if(p) openQuickView(p.id);
+  }}
+}); }
+// run after products render
+const originalRenderProducts = renderProducts;
+renderProducts = function(opts){ originalRenderProducts(opts); enhanceProductCards(); }
+// re-run initial render
+renderProducts();
+
+// ORDERS: save orders to localStorage
+const ORDERS_KEY = 'sgz_orders_v6';
+function saveOrder(order){ const arr = JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]'); arr.unshift(order); localStorage.setItem(ORDERS_KEY, JSON.stringify(arr)); }
+function renderOrders(){ const box = document.getElementById('ordersList'); const arr = JSON.parse(localStorage.getItem(ORDERS_KEY)||'[]'); if(arr.length===0){ box.innerHTML='<div style="padding:20px;color:var(--muted)">No orders yet</div>'; return; } let html=''; arr.forEach(o=>{ html += `<div class="panel" style="margin-bottom:8px;padding:10px"><div><strong>Order #${o.id}</strong> — ₹${o.total}</div><div style="color:var(--muted);font-size:13px">${o.date}</div><div style="margin-top:6px">${o.items.map(i=>i.name+' x'+i.qty).join(', ')}</div></div>`; }); box.innerHTML = html; }
+
+// On successful mock payment, store order
+const oldPayNow = document.getElementById('payNow').onclick;
+document.getElementById('payNow').onclick = function(){ oldPayNow(); // call mock validation
+  // if cart empty skip
+  if(cart.length===0) return;
+  const items = cart.map(i=>({id:i.id, qty:i.qty, name: byId(i.id).name, price: byId(i.id).price}));
+  const total = items.reduce((s,it)=>s+it.price*it.qty,0);
+  const order = { id: 'ORD'+Date.now(), items, total, date: new Date().toLocaleString() };
+  saveOrder(order); renderOrders(); // clear cart handled by old payNow
+};
+
+// Open orders modal from profile modal (add button)
+const ordersBtn = document.createElement('button'); ordersBtn.className='btn ghost'; ordersBtn.textContent='Orders'; ordersBtn.onclick = ()=>{ document.getElementById('ordersModal').classList.add('show'); renderOrders(); };
+// append to profile sheet when opened
+const originalRenderProfile = renderProfile;
+renderProfile = function(){ originalRenderProfile(); const sheet = document.querySelector('#profileModal .sheet'); if(sheet && !sheet.querySelector('.profile-orders-btn')){ sheet.querySelector('.sheet')?.appendChild(ordersBtn); /* defensive */ const footer = sheet; footer.insertBefore(ordersBtn, footer.querySelector('div')||null); } };
+
+// CART PAGE: Add "Open Cart Page" button - creates a simple full-screen cart view
+const openCartPageBtn = document.createElement('button'); openCartPageBtn.className='btn ghost'; openCartPageBtn.textContent='Open Cart Page'; openCartPageBtn.onclick = ()=>{
+  // create a simple page-like overlay
+  const overlay = document.createElement('div'); overlay.style.position='fixed'; overlay.style.inset=0; overlay.style.background='rgba(0,0,0,0.9)'; overlay.style.zIndex=10000; overlay.style.padding='24px';
+  const inner = document.createElement('div'); inner.style.maxWidth='900px'; inner.style.margin='0 auto'; inner.style.background='#0d1113'; inner.style.padding='16px'; inner.style.borderRadius='10px';
+  inner.innerHTML = '<h2>Your Cart (Page)</h2><div id="pageCartContent"></div><div style="margin-top:12px;text-align:right"><button id="pageCheckout" class="btn primary">Checkout</button><button id="closePageCart" class="btn ghost">Close</button></div>';
+  overlay.appendChild(inner); document.body.appendChild(overlay);
+  // render cart into pageCartContent
+  const pageBox = document.getElementById('pageCartContent'); let html=''; if(cart.length===0){ html='<div style="padding:16px;color:var(--muted)">Cart empty</div>'; } else { html = '<table style="width:100%">'; let g=0; cart.forEach(it=>{ const p=byId(it.id); g+=p.price*it.qty; html += `<tr><td>${p.name}</td><td>₹${p.price}</td><td>x${it.qty}</td><td>₹${p.price*it.qty}</td></tr>`; }); html += `</table><div style="text-align:right;margin-top:12px"><strong>Total: ₹${g}</strong></div>`; }
+  pageBox.innerHTML = html;
+  document.getElementById('closePageCart').onclick = ()=> overlay.remove();
+  document.getElementById('pageCheckout').onclick = ()=>{ document.getElementById('cartModal').classList.remove('show'); document.getElementById('paymentModal').classList.add('show'); document.body.removeChild(overlay); };
+};
+// attach openCartPageBtn near cart btn
+const cartBtnNode = document.getElementById('cartBtn'); cartBtnNode.parentNode.insertBefore(openCartPageBtn, cartBtnNode.nextSibling);
+
+// initialization
+renderProducts(); updateBadges();
+</script>
+
+<script>
+// Animate sections on scroll
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){ entry.target.style.opacity = 1; }
+  })
+},{threshold:0.2});
+
+document.querySelectorAll('.section').forEach(sec=>observer.observe(sec));
+
+// Hero glow animation
+const hero = document.querySelector('.hero');
+let glow = 0;
+setInterval(()=>{ glow = glow === 0 ? 20 : 0; hero.style.boxShadow = `0 0 ${glow}px #00d4ff80`; }, 1500);
+
+</script>
+
+<!-- LEVEL 10: ULTRA-ALL-IN (AI CHATBUBBLE, MEGA MENU, HERO CAROUSEL, 3D PRODUCT VIEWER, NEON TRAIL CURSOR, HOLOGRAM MODE, MOBILE OPTIMIZATIONS) -->
+
+<!-- AI CHATBUBBLE (mock, local) -->
+<div id="jarvisChat" style="position:fixed;right:24px;bottom:24px;z-index:10010">
+  <button id="chatToggle" class="btn primary" style="border-radius:50px;padding:14px 18px;">Jarvis 💬</button>
+  <div id="chatBox" style="width:320px;display:none;background:#021018;border-radius:12px;margin-top:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)">
+    <div id="chatLog" style="height:240px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:8px"><input id="chatInp" placeholder="Ask Jarvis..." style="flex:1;padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,0.02);color:inherit"/><button id="sendChat" class="btn primary">Send</button></div>
+  </div>
+</div>
+
+<!-- MEGA MENU (desktop) -->
+<style>
+.mega {position:relative}
+.mega .menu-grid{display:none;position:absolute;left:0;right:0;top:100%;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.5));padding:18px;border-radius:8px;box-shadow:0 20px 50px rgba(0,0,0,0.6)}
+.mega:hover .menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.menu-grid a{display:block;padding:8px;border-radius:8px;color:var(--neon1);text-decoration:none}
+</style>
+<script>
+// create mega menu items dynamically
+const nav = document.querySelector('.navbar');
+if(nav){ const mega = document.createElement('div'); mega.className='mega'; mega.innerHTML = `<a href="#" style="padding:8px;color:var(--neon2);font-weight:700">Categories ▾</a><div class="menu-grid"><div><a>Mens Watches</a><a>Women Watches</a><a>Sports</a></div><div><a>Smart Watches</a><a>Premium</a><a>Digital</a></div><div><a>New Arrivals</a><a>Best Sellers</a><a>Offers</a></div><div><a>Brands</a><a>Accessories</a><a>Gift Cards</a></div></div>`; nav.prepend(mega); }
+</script>
+
+<!-- HERO CAROUSEL -->
+<style>
+.hero-carousel{position:relative;overflow:hidden;border-radius:12px;margin-top:18px}
+.hero-carousel .cslide{min-height:320px;display:flex;align-items:center;justify-content:center;background-size:cover;background-position:center;transition:transform .8s ease,opacity .8s ease}
+.hero-carousel .dots{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;gap:8px}
+.hero-carousel .dots button{width:10px;height:10px;border-radius:50%;border:none;background:rgba(255,255,255,0.2)}
+.hero-carousel .dots button.active{background:var(--neon1)}
+</style>
+<script>
+// build a simple carousel under the hero
+const heroEl = document.querySelector('.hero');
+if(heroEl){ const carousel = document.createElement('div'); carousel.className='hero-carousel'; carousel.innerHTML = `<div class='cwrap' style='display:flex;transition:transform .8s ease'><div class='cslide' style='background-image:url(https://m.media-amazon.com/images/I/71AvQd3VzqL._SL1500_.jpg)'></div><div class='cslide' style='background-image:url(https://m.media-amazon.com/images/I/71jDdQO47oL._UL1500_.jpg)'></div><div class='cslide' style='background-image:url(https://m.media-amazon.com/images/I/81WimZLWH1L._SL1500_.jpg)'></div></div><div class="dots"></div>`; heroEl.appendChild(carousel);
+  const dots = carousel.querySelector('.dots'); const slides = carousel.querySelectorAll('.cslide'); slides.forEach((s,i)=>{ const b=document.createElement('button'); if(i===0) b.classList.add('active'); b.onclick=()=>{ idx=i; refresh(); }; dots.appendChild(b); });
+  let idx=0; function refresh(){ carousel.querySelector('.cwrap').style.transform = `translateX(-${idx*100}%)`; dots.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===idx)); }
+  setInterval(()=>{ idx=(idx+1)%slides.length; refresh(); },4000);
+}
+</script>
+
+<!-- 3D PRODUCT VIEWER (basic CSS transform with drag rotate) -->
+<style>
+.viewer{width:300px;height:300px;border-radius:12px;background:#071018;display:flex;align-items:center;justify-content:center;margin:8px auto;cursor:grab}
+.viewer img{width:240px;transform-style:preserve-3d;transition:transform .2s ease}
+</style>
+<script>
+// add viewer to product quick view dynamically
+function attachViewer(imageUrl){ const v = document.createElement('div'); v.className='viewer'; const img = document.createElement('img'); img.src = imageUrl; v.appendChild(img);
+  let dragging=false, lastX=0,lastY=0, rotX=0, rotY=0;
+  v.onmousedown = (e)=>{ dragging=true; v.style.cursor='grabbing'; lastX=e.clientX; lastY=e.clientY; }
+  window.onmouseup = ()=>{ dragging=false; v.style.cursor='grab'; }
+  window.onmousemove = (e)=>{ if(!dragging) return; const dx = e.clientX-lastX; const dy = e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; rotY += dx*0.3; rotX -= dy*0.3; img.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`; };
+  return v; }
+// whenever quick view opens, prepend viewer
+const oldOpenQuick = openQuickView; openQuickView = function(id){ oldOpenQuick(id); const p = byId(id); const sheet = document.querySelector('#quickView .sheet'); if(sheet){ const existing = sheet.querySelector('.viewer'); if(existing) existing.remove(); const v = attachViewer(p.img); sheet.insertBefore(v, sheet.firstChild); }};
+</script>
+
+<!-- NEON TRAIL CURSOR -->
+<canvas id="trail" style="position:fixed;left:0;top:0;pointer-events:none;z-index:10005"></canvas>
+<script>
+(function(){ const c=document.getElementById('trail'); const ctx=c.getContext('2d'); let w=c.width=innerWidth, h=c.height=innerHeight; window.addEventListener('resize',()=>{ w=c.width=innerWidth; h=c.height=innerHeight; }); let points=[]; window.addEventListener('mousemove',(e)=>{ points.push({x:e.clientX,y:e.clientY,t:Date.now(),c:Math.random()<0.5? 'rgba(0,246,255,0.9)': 'rgba(155,89,255,0.9)'}); if(points.length>50) points.shift(); }); function draw(){ ctx.clearRect(0,0,w,h); const now=Date.now(); for(let i=0;i<points.length;i++){ const p=points[i]; const age=(now-p.t)/600; if(age>1) continue; ctx.beginPath(); ctx.fillStyle = p.c.replace('0.9', (1-age*0.9).toString()); ctx.arc(p.x,p.y, 8*(1-age),0,Math.PI*2); ctx.fill(); } requestAnimationFrame(draw);} draw(); })();
+</script>
+
+<!-- HOLOGRAM MODE TOGGLE -->
+<button id="holoToggle" style="position:fixed;right:24px;bottom:90px;padding:10px;border-radius:12px;background:linear-gradient(90deg,#9b59ff,#00f6ff);z-index:10010;">Hologram</button>
+<script>
+let holo=false; document.getElementById('holoToggle').onclick = ()=>{ holo=!holo; document.body.style.filter = holo? 'saturate(1.2) contrast(1.05) hue-rotate(10deg) drop-shadow(0 30px 60px rgba(155,89,255,0.06))' : ''; alert(holo? 'Hologram mode ON' : 'Hologram mode OFF'); };
+</script>
+
+<!-- MOBILE OPTIMIZATIONS -->
+<style>
+@media (max-width:720px){ .left{display:none} .top-row{flex-direction:column} .searchbar{flex-direction:column;gap:6px} .card{width:100%!important} .hero{height:220px} }
+</style>
+
+<script>
+// Chat widget behavior
+const chatToggle = document.getElementById('chatToggle'); const chatBox = document.getElementById('chatBox'); const chatLog = document.getElementById('chatLog'); const chatInp = document.getElementById('chatInp'); const sendChat = document.getElementById('sendChat');
+chatToggle.onclick = ()=> chatBox.style.display = chatBox.style.display==='none' ? 'block' : 'none';
+sendChat.onclick = ()=>{ const q = chatInp.value.trim(); if(!q) return; const userMsg = document.createElement('div'); userMsg.style.alignSelf='flex-end'; userMsg.style.background='rgba(255,255,255,0.05)'; userMsg.style.padding='8px'; userMsg.style.borderRadius='8px'; userMsg.textContent = q; chatLog.appendChild(userMsg); chatInp.value=''; // simple mock reply
+  setTimeout(()=>{ const bot = document.createElement('div'); bot.style.alignSelf='flex-start'; bot.style.background='linear-gradient(90deg,#00f6ff,#9b59ff)'; bot.style.color='#021018'; bot.style.padding='8px'; bot.style.borderRadius='8px'; bot.textContent = 'Jarvis: Nice! I can help with product recommendations, coupons, or mock checkout.'; chatLog.appendChild(bot); chatLog.scrollTop = chatLog.scrollHeight; },600);
+};
+
+// bind quick view buttons created earlier to open quick view (if not already)
+document.addEventListener('click', (e)=>{ if(e.target && e.target.matches('.btn.ghost')){ /* ignore ghost clicks */ } });
+
+// minor: enable keyboard shortcut 'j' to open Jarvis
+window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='j'){ chatBox.style.display='block'; chatInp.focus(); } });
+</script>
+
+<script>
+// === Level 11: Voice Mode Jarvis Assistant ===
+let recognition;
+const micBtn = document.createElement('button');
+micBtn.innerText = "🎤";
+micBtn.style.position = "fixed";
+micBtn.style.bottom = "110px";
+micBtn.style.right = "25px";
+micBtn.style.padding = "12px 14px";
+micBtn.style.fontSize = "20px";
+micBtn.style.borderRadius = "50%";
+micBtn.style.background = "#00e5ff";
+micBtn.style.boxShadow = "0 0 15px #00e5ff";
+micBtn.style.border = "none";
+micBtn.style.cursor = "pointer";
+micBtn.style.zIndex = "9999";
+document.body.appendChild(micBtn);
+
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = "en-US";
+
+  micBtn.onclick = () => {
+    recognition.start();
+    micBtn.style.boxShadow = "0 0 25px #00ffea";
+  };
+
+  recognition.onresult = (e) => {
+    const spoken = e.results[0][0].transcript;
+    addJarvisMessage("You said: " + spoken);
+    micBtn.style.boxShadow = "0 0 15px #00e5ff";
+  };
+}
+
+function addJarvisMessage(msg){
+  const chatBox = document.querySelector("#jarvisMessages");
+  if(chatBox){
+    const div = document.createElement("div");
+    div.className = "bot";
+    div.innerText = msg;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+}
+</script>
+<style>
+/* === Level 12: 3D Page Transition System === */
+.page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center,#00eaff,#7b2cff);
+  transform: scale(0) rotateY(0deg);
+  transition: transform 0.8s ease;
+  z-index: 999999;
+  pointer-events:none;
+  filter: blur(2px);
+}
+.page-transition-overlay.active {
+  transform: scale(3) rotateY(360deg);
+}
+</style>
+
+<div class="page-transition-overlay" id="transitionFx"></div>
+
+<script>
+// === Level 12 JS: Trigger 3D transition on link click ===
+const overlay = document.getElementById('transitionFx');
+
+function triggerTransition(){
+  overlay.classList.add('active');
+  setTimeout(()=>{
+    overlay.classList.remove('active');
+  },900);
+}
+
+document.querySelectorAll('a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    if(a.target === '_blank') return;
+    e.preventDefault();
+    triggerTransition();
+    const url = a.href;
+    setTimeout(()=>{ window.location.href = url; },400);
+  });
+});
+</script>
+<style>
+/* === Level 13: Shockwave Page Opening Animation === */
+#shockwaveFx {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,255,255,0.7) 0%, rgba(0,0,0,0) 70%);
+  opacity: 0;
+  transform: scale(0.2);
+  pointer-events: none;
+  z-index: 9999999;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+}
+#shockwaveFx.active {
+  opacity: 1;
+  transform: scale(4);
+}
+</style>
+
+<div id="shockwaveFx"></div>
+
+<script>
+// === LEVEL 13 JS: Shockwave Animation on Load ===
+const shockwave = document.getElementById('shockwaveFx');
+
+function runShockwave(){
+  shockwave.classList.add('active');
+  setTimeout(()=>{
+    shockwave.classList.remove('active');
+  },700);
+}
+
+window.addEventListener('load', ()=>{
+  setTimeout(runShockwave, 200);
+});
+</script>
+</body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>

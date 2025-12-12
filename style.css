@@ -1,0 +1,83 @@
+* { margin: 0; padding: 0; box-shadow: border-box; font-family: 'Poppins'; }
+
+/* DARK & LIGHT */
+body.dark { background: #0e0e0e; color: white; }
+body.light { background: white; color: black; }
+
+/* LOADER */
+#loader {
+  position: fixed; width: 100%; height: 100%;
+  background: #000; color: white;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; z-index: 9999;
+}
+.spinner {
+  width: 60px; height: 60px;
+  border: 7px solid #ff9900;
+  border-top: 7px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* HEADER */
+.header {
+  background: #131921; padding: 15px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.logo { 
+  font-size: 28px; font-weight: 700;
+  color: #ff9900;
+}
+.logo span { color: white; }
+
+/* NAV */
+.navbar {
+  background: #232f3e; padding: 12px;
+  display: flex; gap: 25px; justify-content: center;
+}
+.navbar a { color: white; text-decoration: none; }
+
+/* SLIDER */
+.slider { width: 100%; overflow: hidden; margin-top: 20px; }
+.slides { display: flex; animation: slide 12s infinite; }
+.slides img { width: 100%; height: 350px; object-fit: cover; }
+
+@keyframes slide {
+  0% { transform: translateX(0); }
+  33% { transform: translateX(-100%); }
+  66% { transform: translateX(-200%); }
+  100% { transform: translateX(0); }
+}
+
+/* PRODUCTS */
+.products-section { padding: 40px; text-align: center; }
+.products {
+  display: flex; flex-wrap: wrap;
+  gap: 20px; justify-content: center;
+}
+.card {
+  width: 250px; background: #1a1a1a;
+  padding: 15px; border-radius: 12px;
+  transition: 0.3s; text-align: center;
+}
+.card img { width: 100%; border-radius: 10px; }
+.card:hover { transform: scale(1.05); box-shadow: 0 0 15px #ff9900; }
+
+/* POPUPS */
+.popup {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+}
+.popup-content {
+  background: white; padding: 20px; width: 300px;
+  border-radius: 12px; color: black;
+}
+textarea { width: 100%; height: 80px; margin: 10px 0; }
+
+/* ADMIN */
+.admin-panel input {
+  width: 100%; padding: 8px; margin-bottom: 10px;
+}
